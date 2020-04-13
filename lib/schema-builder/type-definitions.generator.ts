@@ -45,10 +45,10 @@ export class TypeDefinitionsGenerator {
 
   private generateInterfaceDefs(options: BuildSchemaOptions) {
     const metadata = TypeMetadataStorage.getInterfacesMetadata();
-    const interfaceDefs = metadata.map(metadata =>
-      this.interfaceDefinitionFactory.create(metadata, options),
-    );
-    this.typeDefinitionsStorage.addInterfaces(interfaceDefs);
+    metadata.forEach(metadata => {
+      const interfaceType = this.interfaceDefinitionFactory.create(metadata, options);
+      this.typeDefinitionsStorage.addInterfaces([interfaceType]);
+    });
   }
 
   private generateEnumDefs() {

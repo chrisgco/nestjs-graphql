@@ -28,6 +28,10 @@ export interface InterfaceTypeOptions {
    * Custom implementation of the "resolveType" function.
    */
   resolveType?: ResolveTypeFn<any, any>;
+  /**
+   * Interfaces implemented by this interface.
+   */
+  implements?: Function | Function[];
 }
 
 /**
@@ -51,12 +55,15 @@ export function InterfaceType(
   const [name, options = {}] = isString(nameOrOptions)
     ? [nameOrOptions, interfaceOptions]
     : [undefined, nameOrOptions];
-
+  const interfaces = options.implements
+    ? [].concat(options.implements)
+    : undefined;
   return (target) => {
     const metadata = {
       name: name || target.name,
       target,
       ...options,
+      interfaces,
     };
     LazyMetadataStorage.store(() =>
       TypeMetadataStorage.addInterfaceMetadata(metadata),

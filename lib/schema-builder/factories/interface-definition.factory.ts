@@ -9,6 +9,7 @@ import { TypeDefinitionsStorage } from '../storages/type-definitions.storage';
 import { TypeMetadataStorage } from '../storages/type-metadata.storage';
 import { OutputTypeFactory } from './output-type.factory';
 import { ResolveTypeFactory } from './resolve-type.factory';
+import { ArgsFactory } from './args.factory';
 
 export interface InterfaceTypeDefinition {
   target: Function;
@@ -23,6 +24,7 @@ export class InterfaceDefinitionFactory {
     private readonly typeDefinitionsStorage: TypeDefinitionsStorage,
     private readonly outputTypeFactory: OutputTypeFactory,
     private readonly typeFieldsAccessor: TypeFieldsAccessor,
+    private readonly argsFactory: ArgsFactory,
   ) {}
 
   public create(
@@ -38,6 +40,7 @@ export class InterfaceDefinitionFactory {
         description: metadata.description,
         fields: this.generateFields(metadata, options),
         resolveType,
+        interfaces: this.generateInterfaces(metadata),
       }),
     };
   }
@@ -81,6 +84,7 @@ export class InterfaceDefinitionFactory {
       let fields: GraphQLFieldConfigMap<any, any> = {};
       metadata.properties.forEach(property => {
         fields[property.schemaName] = {
+          args: this.argsFactory.create(property.methodArgs, options),
           description: property.description,
           type: this.outputTypeFactory.create(
             property.name,
@@ -104,6 +108,30 @@ export class InterfaceDefinitionFactory {
         }
       }
       return fields;
+    };
+  }
+
+  private generateInterfaces(metadata: InterfaceMetadata) {
+    const prototype = Object.getPrototypeOf(metadata.target);
+    const getParentType = () => {
+      const parentTypeDefinition = this.typeDefinitionsStorage.getInterfaceByTarget(
+        prototype,
+      );
+      return parentTypeDefinition ? parentTypeDefinition.type : undefined;
+    };
+    return () => {
+      const interfaces = (metadata.interfaces || []).map<GraphQLInterfaceType>(
+        (item) => this.typeDefinitionsStorage.getInterfaceByTarget(item).type,
+      );
+      if (!isUndefined(prototype)) {
+        const parentClass = getParentType();
+        if (!parentClass) {
+          return interfaces;
+        }
+        const parentInterfaces = parentClass.getInterfaces();
+        return Array.from(new Set([...interfaces, ...parentInterfaces]));
+      }
+      return interfaces;
     };
   }
 }
