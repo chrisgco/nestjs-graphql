@@ -15,9 +15,21 @@ export class ResolveTypeFactory {
   ): GraphQLTypeResolver<TSource, TContext> {
     return async (...args) => {
       const resolvedType = await resolveType(...args);
+
       if (isString(resolvedType)) {
+        const interfaceDef = this.typeDefinitionsStorage
+          .getAllInterfaceDefinitions()
+          .find((def) => def.type.name === resolvedType);
+        if (interfaceDef) return interfaceDef.type.resolveType(...args);
+
         return resolvedType;
       }
+
+      const interfaceDef = this.typeDefinitionsStorage.getInterfaceByTarget(
+        resolvedType,
+      );
+      if (interfaceDef) return interfaceDef.type.resolveType(...args);
+
       const typeDef = this.typeDefinitionsStorage.getObjectTypeByTarget(
         resolvedType,
       );

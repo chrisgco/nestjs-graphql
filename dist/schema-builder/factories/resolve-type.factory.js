@@ -12,8 +12,15 @@ let ResolveTypeFactory = class ResolveTypeFactory {
         return (...args) => tslib_1.__awaiter(this, void 0, void 0, function* () {
             const resolvedType = yield resolveType(...args);
             if (shared_utils_1.isString(resolvedType)) {
+                const interfaceDef = this.typeDefinitionsStorage.getAllInterfaceDefinitions()
+                    .find(def => def.type.name === resolvedType);
+                if (interfaceDef)
+                    return interfaceDef.type.resolveType(...args);
                 return resolvedType;
             }
+            const interfaceDef = this.typeDefinitionsStorage.getInterfaceByTarget(resolvedType);
+            if (interfaceDef)
+                return interfaceDef.type.resolveType(...args);
             const typeDef = this.typeDefinitionsStorage.getObjectTypeByTarget(resolvedType);
             return typeDef.type;
         });
